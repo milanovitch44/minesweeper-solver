@@ -47,9 +47,7 @@ class MineField:
             
             coordinate = self.tilesToOpen.pop()
             x,y = coordinate
-            if self.board[x][y]!=self.countBombs(coordinate):
-                print(self.getBoard(),end="\n\n\n\n\n\n",flush=True)
-                # time.sleep(0.00001)
+            
             self.board[x][y]=self.countBombs(coordinate)
             
             if self.board[x][y]==0:
@@ -94,23 +92,26 @@ class Engine:
                        
     def isValid(self,field:MineField,changes:list[fieldChange]):
         neighbours = self.getNeighboursOfFieldChange(field,changes)
-        for changes,coordinate in neighbours.items():
-            upperLimit = 8
+        for coordinate,changes in neighbours.items():
+            upperLimit = 0
             lowerLimit = 0
             for neighbour in field.getNeighbours(coordinate):
                 if neighbour in self.knownEdgeTiles:
                     if self.knownEdgeTiles[neighbour].isBomb:
                         lowerLimit+=1
-                    else:
-                        upperLimit-=1
+                    
+                else:
+                    upperLimit+=1
             for change in changes:
                 if change.isBomb:
                     lowerLimit+=1
                 else:
                     upperLimit-=1
             surroundingBombs = field.getCoordinate(coordinate)
+            print(f"{lowerLimit}<={surroundingBombs}<={upperLimit}")
             if lowerLimit>surroundingBombs or upperLimit<surroundingBombs:
                 return False
+
         return True
 
     def getNeighboursOfFieldChange(self,field:MineField,changes:list[fieldChange])->dict[list[fieldChange]]:
@@ -125,6 +126,8 @@ class Engine:
         return neighbours
     def getPossibleChanges(self,field:MineField,changes:list[fieldChange])->set[list]:
         neighbours=set()
+        if len(changes)==0:
+            return self.unknownEdgeTiles
         for change in changes:
             for localNeighbour in field.getNeighbours(change.coordinates):
                 if field.getCoordinate(localNeighbour)!=-1:
@@ -142,9 +145,13 @@ class Engine:
     def getNextTile(self,field:MineField)->fieldChange:
         while len(self.changesToEvaluate)!=0:
             changeList = heapq.heappop(self.changesToEvaluate)
-            neighbours = self.getPossibleChanges(field,changeList)
-            print(neighbours)
-        
+            possibleChanges = self.getPossibleChanges(field,changeList)
+            for possibleChange in possibleChanges:
+                for change in (fieldChange(True,possibleChange),fieldChange(False,possibleChange)):
+                    newChangeList = changeList+[change]
+                    if self.isValid(field,newChangeList):
+                        heapq.heappush(self.changesToEvaluate,[15,0,newChangeList])
+
 
         return None
 
