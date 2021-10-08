@@ -34,7 +34,10 @@ class MineField:
                 [self.getTileChar(self.board[x][y]) for x in range(self.width)]
             ) for y in range(self.height)])
 
-    getTileChar = lambda self,number:"." if number==0 else "#" if number==-1 else str(number)
+    getTileChar = lambda self,number:"." if number==0  else \
+                                     "#" if number==-1 else \
+                                     "⚑" if number==-2 else \
+                                    str(number)
     def openTile(self,beginCoordinate)->bool:
         """
     @return True if succesfull

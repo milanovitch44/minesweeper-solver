@@ -7,9 +7,10 @@ class testEngine(unittest.TestCase):
     def test_engine(self):
         mf = main.MineField(50,10,bombs=20)
         mf.openTile((3,3))
-        print(mf.getBoard())
+        
         e=main.Engine(mf)
         while True:
+            print(mf.getBoard())
             fc = e.getNextTile(mf)
             print(str(fc))
             assert mf.isBomb[fc.coordinates[0]][fc.coordinates[1]]==fc.isBomb
