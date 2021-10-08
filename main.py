@@ -92,14 +92,14 @@ class Engine:
 
     def calculateEdgeTiles(self,field:MineField):
         self.unknownEdgeTiles = set()
-        self.knownEdgeTiles = {}
+        # self.knownEdgeTiles = {}
         for x,row in enumerate(field.board):
             for y,el in enumerate(row):
                 if field.board[x][y]!=-1:
                     for neighbour in field.getNeighbours((x,y)):
                         if field.getCoordinate(neighbour)==-1:
                             self.unknownEdgeTiles.add(neighbour)
-                    self.knownEdgeTiles[(x,y)] = FieldChange(False,(x,y))
+                    # self.knownEdgeTiles[(x,y)] = FieldChange(False,(x,y))
                        
     def isValid(self,field:MineField,changes:list[FieldChange]):
         neighbours = self.getNeighboursOfFieldChange(field,changes)
@@ -108,12 +108,12 @@ class Engine:
             upperLimit = 0
             lowerLimit = 0
             for neighbour in field.getNeighbours(coordinate):
-                if field.getCoordinate(neighbour)!=-1:
-                    if self.knownEdgeTiles[neighbour].isBomb:
-                        lowerLimit+=1
-                    
-                else:
+                
+                tileValue = field.getCoordinate(neighbour)
+                if tileValue==-1:
                     upperLimit+=1
+                elif tileValue==-2:
+                    lowerLimit+=1
             for change in changes:
                 if change.isBomb:
                     lowerLimit+=1
@@ -195,7 +195,7 @@ class Engine:
                         
                         if result is not None:
                             return result
-            self.parentFieldChanges[changeList]=ParentFieldChange(changeList)
+            self.parentFieldChanges[self.deepStr(changeList)]=ParentFieldChange(changeList)
             
 
 

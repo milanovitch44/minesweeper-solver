@@ -11,9 +11,10 @@ class testEngine(unittest.TestCase):
         e=main.Engine(mf)
         while True:
             fc = e.getNextTile(mf)
-            assert mf.getCoordinate(fc.coordinates)==fc.isBomb
-            # mf.board[fc.coordinates[0]][fc.coordinates[1]] = fc.isBomb
-                
+            print(str(fc))
+            assert mf.isBomb[fc.coordinates[0]][fc.coordinates[1]]==fc.isBomb
+            mf.board[fc.coordinates[0]][fc.coordinates[1]] = -2 if fc.isBomb else mf.countBombs(fc.coordinates)
+            e=main.Engine(mf) #hard reload
     
     def test_flood_fill(self):
         mf = main.MineField(50,10,bombs=30)
