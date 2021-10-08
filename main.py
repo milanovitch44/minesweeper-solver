@@ -1,4 +1,5 @@
-from random import randrange
+import queue
+from random import random, randrange
 import heapq
 import time
 class MineField:
@@ -10,7 +11,7 @@ class MineField:
 
         while bombs!=0:
             x,y = randrange(0,width),randrange(0,height)
-            if not self.isBomb[x][y]:
+            if not self.isBomb[x][y] and (x,y)!=(0,0):
                 bombs-=1
                 self.isBomb[x][y]=True
     def getCoordinate(self,coordinate:list):
@@ -65,18 +66,28 @@ class MineField:
                 counter+=1
         return counter
 
-class fieldChange:
+class FieldChange:
     def __init__(self,isBomb,coordinates) -> None:
         self.isBomb=isBomb
         self.coordinates=coordinates
     def __str__(self) -> str:
         return f"fieldChange({self.getType()} on {self.coordinates})"
     getType = lambda self:"flagged bomb" if self.isBomb else "safe spot"
+    opposite = lambda self:FieldChange(not(self.isBomb),self.coordinates)
+
+class ParentFieldChange:
+    def __init__(self,fieldChanges) -> None:
+        self.fieldChanges = fieldChanges
+        self.forbiddenChildren:set[fieldChanges] = set()
+        self.finished=False
 
 class Engine:
     def __init__(self,field:MineField) -> None:
         self.calculateEdgeTiles(field)
-        self.changesToEvaluate:heapq.__heap = [[]]
+        self.changesToEvaluate:queue.Queue[list[FieldChange]] = queue.Queue()
+        self.changesToEvaluate.put([])
+        # self.addedToChangesToEvaluate:set[list[FieldChange]] = set()
+        self.parentFieldChanges = {}
 
 
     def calculateEdgeTiles(self,field:MineField):
@@ -88,15 +99,16 @@ class Engine:
                     for neighbour in field.getNeighbours((x,y)):
                         if field.getCoordinate(neighbour)==-1:
                             self.unknownEdgeTiles.add(neighbour)
-                    self.knownEdgeTiles[(x,y)] = fieldChange(False,(x,y))
+                    self.knownEdgeTiles[(x,y)] = FieldChange(False,(x,y))
                        
-    def isValid(self,field:MineField,changes:list[fieldChange]):
+    def isValid(self,field:MineField,changes:list[FieldChange]):
         neighbours = self.getNeighboursOfFieldChange(field,changes)
         for coordinate,changes in neighbours.items():
+            # print(f"{coordinate=} {changes=}")
             upperLimit = 0
             lowerLimit = 0
             for neighbour in field.getNeighbours(coordinate):
-                if neighbour in self.knownEdgeTiles:
+                if field.getCoordinate(neighbour)!=-1:
                     if self.knownEdgeTiles[neighbour].isBomb:
                         lowerLimit+=1
                     
@@ -108,14 +120,15 @@ class Engine:
                 else:
                     upperLimit-=1
             surroundingBombs = field.getCoordinate(coordinate)
-            print(f"{lowerLimit}<={surroundingBombs}<={upperLimit}")
-            if lowerLimit>surroundingBombs or upperLimit<surroundingBombs:
+            # print(f"{lowerLimit}<={surroundingBombs}<={upperLimit}")
+            if not(lowerLimit<=surroundingBombs<=upperLimit):
                 return False
 
         return True
 
-    def getNeighboursOfFieldChange(self,field:MineField,changes:list[fieldChange])->dict[list[fieldChange]]:
+    def getNeighboursOfFieldChange(self,field:MineField,changes:list[FieldChange])->dict[list[FieldChange]]:
         neighbours = {}
+
         for change in changes:
             for neighbour in field.getNeighbours(change.coordinates):
                 if field.getCoordinate(neighbour)!=-1:
@@ -124,16 +137,15 @@ class Engine:
                     else:
                         neighbours[neighbour]=[change]
         return neighbours
-    def getPossibleChanges(self,field:MineField,changes:list[fieldChange])->set[list]:
+    def getPossibleChanges(self,field:MineField,changes:list[FieldChange])->set[list]:
         neighbours=set()
         if len(changes)==0:
-            return self.unknownEdgeTiles
+            return 
         for change in changes:
             for localNeighbour in field.getNeighbours(change.coordinates):
-                if field.getCoordinate(localNeighbour)!=-1:
-                    for farNeighbour in field.getNeighbours(localNeighbour):
-                        if field.getCoordinate(farNeighbour)==-1:
-                            neighbours.add(farNeighbour)
+                for farNeighbour in field.getNeighbours(localNeighbour):
+                    if field.getCoordinate(farNeighbour)==-1:
+                        neighbours.add(farNeighbour)
 
                         # if field.board[neighbour[0]][neighbour[1]]!=-1:
                         #     if neighbour in neighbours:
@@ -142,15 +154,49 @@ class Engine:
                         #         neighbours[neighbour]=[change]
         # changes = [fieldChange(False,coordinates) for coordinates in ]
         return neighbours
-    def getNextTile(self,field:MineField)->fieldChange:
-        while len(self.changesToEvaluate)!=0:
-            changeList = heapq.heappop(self.changesToEvaluate)
-            possibleChanges = self.getPossibleChanges(field,changeList)
-            for possibleChange in possibleChanges:
-                for change in (fieldChange(True,possibleChange),fieldChange(False,possibleChange)):
+    def deepStr(self,changeList):
+        return "".join([str(el) for el in changeList])
+    # returns right answer or None if unknown
+    def helpParent(self,changeList:list[FieldChange],change)->FieldChange:
+        oppositeChange = change.opposite()
+        if changeList==[]:
+            return oppositeChange
+        
+        parent = self.parentFieldChanges[self.deepStr(changeList)]
+        if not parent.finished:
+            if oppositeChange in parent.forbiddenChildren:
+                parent.finished = True
+                for index in range(len(changeList)):
+                    parentOfParent = self.parentFieldChanges[self.deepStr(changeList[:index]+changeList[index+1:])]
+                        
+                    res =  self.helpParent(self,parentOfParent,changeList[index])
+                    if res is not None:
+                        return res
+            else:
+                parent.forbiddenChildren.add(change)
+        return None
+    def getNextTile(self,field:MineField)->FieldChange:
+        while self.changesToEvaluate.not_empty:
+            changeList = self.changesToEvaluate.get()
+            if changeList==[]:# first run
+                possibleChanges = self.unknownEdgeTiles
+            else:
+                possibleChanges = self.getPossibleChanges(field,changeList)
+            for possibleChangeCoordinate in possibleChanges:
+                for change in (FieldChange(True,possibleChangeCoordinate)
+                              ,FieldChange(False,possibleChangeCoordinate)):
                     newChangeList = changeList+[change]
                     if self.isValid(field,newChangeList):
-                        heapq.heappush(self.changesToEvaluate,[15,0,newChangeList])
+                        
+                        self.changesToEvaluate.put(newChangeList)
+                            
+                    else:
+                        result = self.helpParent(changeList,change)
+                        
+                        if result is not None:
+                            return result
+            self.parentFieldChanges[changeList]=ParentFieldChange(changeList)
+            
 
 
         return None

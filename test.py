@@ -1,5 +1,6 @@
 import main
 import unittest
+import queue
 # print(main.MineField(2,3,4).board)
 
 class testEngine(unittest.TestCase):
@@ -8,8 +9,19 @@ class testEngine(unittest.TestCase):
         mf.openTile((3,3))
         print(mf.getBoard())
         e=main.Engine(mf)
-        print(e.getNextTile(mf))
+        while True:
+            fc = e.getNextTile(mf)
+            assert mf.getCoordinate(fc.coordinates)==fc.isBomb
+            # mf.board[fc.coordinates[0]][fc.coordinates[1]] = fc.isBomb
+                
+    
+    def test_flood_fill(self):
+        mf = main.MineField(50,10,bombs=30)
+        mf.openTile((0,0))
+        print(mf.getBoard())
+    
 
+testEngine().test_engine()
 # print(mf.board)
 
 # print(list(main.Engine().calculateEdgeTiles(mf)))
