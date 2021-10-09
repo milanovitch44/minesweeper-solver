@@ -11,7 +11,7 @@ class MineField:
 
         while bombs!=0:
             x,y = randrange(0,width),randrange(0,height)
-            if not self.isBomb[x][y] and (x,y)!=(0,0):
+            if not self.isBomb[x][y] and x>3 and y>3:
                 bombs-=1
                 self.isBomb[x][y]=True
     def getCoordinate(self,coordinate:list):
@@ -108,24 +108,25 @@ class Engine:
         neighbours = self.getNeighboursOfFieldChange(field,changes)
         for coordinate,changes in neighbours.items():
             # print(f"{coordinate=} {changes=}")
-            upperLimit = 0
-            lowerLimit = 0
-            for neighbour in field.getNeighbours(coordinate):
-                
-                tileValue = field.getCoordinate(neighbour)
-                if tileValue==-1:
-                    upperLimit+=1
-                elif tileValue==-2:
-                    lowerLimit+=1
-            for change in changes:
-                if change.isBomb:
-                    lowerLimit+=1
-                else:
-                    upperLimit-=1
-            surroundingBombs = field.getCoordinate(coordinate)
-            # print(f"{lowerLimit}<={surroundingBombs}<={upperLimit}")
-            if not(lowerLimit<=surroundingBombs<=upperLimit):
-                return False
+            if field.getCoordinate(coordinate)!=-2:
+                upperLimit = 0
+                lowerLimit = 0
+                for neighbour in field.getNeighbours(coordinate):
+                    
+                    tileValue = field.getCoordinate(neighbour)
+                    if tileValue==-1:
+                        upperLimit+=1
+                    elif tileValue==-2:
+                        lowerLimit+=1
+                for change in changes:
+                    if change.isBomb:
+                        lowerLimit+=1
+                    else:
+                        upperLimit-=1
+                surroundingBombs = field.getCoordinate(coordinate)
+                # print(f"{lowerLimit}<={surroundingBombs}<={upperLimit}")
+                if not(lowerLimit<=surroundingBombs<=upperLimit):
+                    return False
 
         return True
 
