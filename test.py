@@ -5,14 +5,14 @@ import queue
 
 class testEngine(unittest.TestCase):
     def test_engine(self):
-        mf = main.MineField(50,10,bombs=20)
+        mf = main.MineField(50,10,bombs=100)
         mf.openTile((2,2))
         
         e=main.Engine(mf)
         while True:
-            print(mf.getBoard())
+            # print(mf.getBoard())
             fc = e.getNextTile(mf)
-            print(str(fc))
+            # print(str(fc))
             
             realValue = mf.isBomb[fc.coordinates[0]][fc.coordinates[1]]
             assert realValue==fc.isBomb

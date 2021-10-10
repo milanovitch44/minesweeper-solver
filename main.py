@@ -1,3 +1,4 @@
+import math as m
 import queue
 from random import random, randrange
 import heapq
@@ -10,8 +11,8 @@ class MineField:
         self.tilesToOpen = []
 
         while bombs!=0:
-            x,y = randrange(0,width),randrange(0,height)
-            if not self.isBomb[x][y] and x>3 and y>3:
+            x,y = randrange(0,width),m.floor(((random()*height)**2)/height)
+            if not self.isBomb[x][y] and x>3 or y>3:
                 bombs-=1
                 self.isBomb[x][y]=True
     def getCoordinate(self,coordinate:list):
@@ -181,6 +182,7 @@ class Engine:
         return None
     def getNextTile(self,field:MineField)->FieldChange:
         while self.changesToEvaluate.not_empty:
+
             changeList = self.changesToEvaluate.get()
             if changeList==[]:# first run
                 possibleChanges = self.unknownEdgeTiles
@@ -190,6 +192,7 @@ class Engine:
                 for change in (FieldChange(True,possibleChangeCoordinate)
                               ,FieldChange(False,possibleChangeCoordinate)):
                     newChangeList = changeList+[change]
+                    # print(self.deepStr(newChangeList),self.isValid(field,newChangeList))
                     if self.isValid(field,newChangeList):
                         
                         self.changesToEvaluate.put(newChangeList)
