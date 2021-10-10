@@ -7,7 +7,7 @@ class MineField:
     def __init__(self, width, height, bombs) -> None:
         self.board = [[-1] * height for _ in range(width)]
         self.isBomb = [[False] * height for _ in range(width)]
-        self.width, self.height = width, height
+        self.width,self.height = width, height
         self.tilesToOpen =[]
 
         while bombs != 0:
