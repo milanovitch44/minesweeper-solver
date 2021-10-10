@@ -109,25 +109,25 @@ class Engine:
         neighbours = self.getNeighboursOfFieldChange(field,changes)
         for coordinate,changes in neighbours.items():
             # print(f"{coordinate=} {changes=}")
-            if field.getCoordinate(coordinate)!=-2:
-                upperLimit = 0
-                lowerLimit = 0
-                for neighbour in field.getNeighbours(coordinate):
-                    
-                    tileValue = field.getCoordinate(neighbour)
-                    if tileValue==-1:
-                        upperLimit+=1
-                    elif tileValue==-2:
-                        lowerLimit+=1
-                for change in changes:
-                    if change.isBomb:
-                        lowerLimit+=1
-                    else:
-                        upperLimit-=1
-                surroundingBombs = field.getCoordinate(coordinate)
-                # print(f"{lowerLimit}<={surroundingBombs}<={upperLimit}")
-                if not(lowerLimit<=surroundingBombs<=upperLimit):
-                    return False
+            upperLimit = 0
+            lowerLimit = 0
+            for neighbour in field.getNeighbours(coordinate):
+                
+                tileValue = field.getCoordinate(neighbour)
+                if tileValue==-1:
+                    upperLimit+=1
+                elif tileValue==-2:
+                    lowerLimit+=1
+                    upperLimit+=1
+            for change in changes:
+                if change.isBomb:
+                    lowerLimit+=1
+                else:
+                    upperLimit-=1
+            surroundingBombs = field.getCoordinate(coordinate)
+            # print(f"{lowerLimit}<={surroundingBombs}<={upperLimit}")
+            if not(lowerLimit<=surroundingBombs<=upperLimit):
+                return False
 
         return True
 
@@ -136,7 +136,8 @@ class Engine:
 
         for change in changes:
             for neighbour in field.getNeighbours(change.coordinates):
-                if field.getCoordinate(neighbour)!=-1:
+
+                if field.getCoordinate(neighbour) >= 0:
                     if neighbour in neighbours:
                         neighbours[neighbour].append(change)
                     else:
