@@ -31,7 +31,7 @@ class MineField:
         return out
 
     def getBoard(self)->str:
-        return "\t\t"+"\n\t\t".join(["".join(
+        return " "+"\n ".join(["".join(
                 [self.getTileChar(self.board[x][y]) for x in range(self.width)]
             ) for y in range(self.height)])
 
