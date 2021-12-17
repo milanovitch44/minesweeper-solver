@@ -4,7 +4,7 @@ from random import random, randrange
 
 
 class MineField:
-    def __init__(self, width, height, bombs) -> None:
+    def __init__(self, width: int, height: int, bombs: int) -> None:
         self.board = [[-1] * height for _ in range(width)]
         self.isBomb = [[False] * height for _ in range(width)]
         self.width, self.height = width, height
@@ -12,14 +12,14 @@ class MineField:
 
         while bombs != 0:
             x, y = randrange(0, width), m.floor(((random() * height) ** 2) / height)
-            if not self.isBomb[x][y] and x > 3 or y > 3:
+            if not self.isBomb[x][y] and (x > 3 or y > 3):
                 bombs -= 1
                 self.isBomb[x][y] = True
 
-    def getCoordinate(self, coordinate: list):
+    def getCoordinate(self, coordinate: tuple):
         return self.board[coordinate[0]][coordinate[1]]
 
-    def getNeighbours(self, coordinate: list):
+    def getNeighbours(self, coordinate: tuple):
         tileX, tileY = coordinate
         out = []
         for xOffset, yOffset in (
@@ -49,61 +49,51 @@ class MineField:
     getTileChar = (
         lambda self, number: "."
         if number == 0
-        else "#"
+        else "~"
         if number == -1
-        else "⚑"
+        else "!"
         if number == -2
         else str(number)
     )
 
-    def openTile(self, beginCoordinate) -> bool:
+    def openTile(self, beginCoordinate: tuple, guessedBomb: bool) -> bool:
         """
-        @return True if succesfull
+        returns if guess was correct
         """
         beginX, beginY = beginCoordinate
-        assert len(self.tilesToOpen) == 0
-        self.tilesToOpen = [beginCoordinate]
-        if self.isBomb[beginX][beginY]:
+        if self.isBomb[beginX][beginY] != guessedBomb:
             return False
-        while len(self.tilesToOpen) != 0:
 
-            coordinate = self.tilesToOpen.pop()
-            x, y = coordinate
-
-            self.board[x][y] = self.countBombs(coordinate)
-
-            if self.board[x][y] == 0:
-                for nextX, nextY in self.getNeighbours(coordinate):
-                    if self.board[nextX][nextY] == -1:  # not visited yet
-                        self.tilesToOpen.append((nextX, nextY))
-
+        self.board[beginX][beginY] = (
+            -2 if guessedBomb else self.countBombs(beginCoordinate)
+        )
+        
         return True
 
-    def countBombs(self, coordinate: list):
-        tileX, tileY = coordinate
-        counter = 0
-        for x, y in self.getNeighbours((tileX, tileY)):
-            if self.isBomb[x][y]:
-                counter += 1
-        return counter
+    countBombs = lambda self, coordinate: sum(
+        map(
+            lambda coordinate: 1 if self.isBomb[coordinate[0]][coordinate[1]] else 0,
+            self.getNeighbours(coordinate),
+        )
+    )
 
 
 class FieldChange:
-    def __init__(self, isBomb, coordinates) -> None:
+    def __init__(self, isBomb, coordinate) -> None:
         self.isBomb = isBomb
-        self.coordinates = coordinates
+        self.coordinate = coordinate
 
     def __str__(self) -> str:
-        return f"fieldChange({self.getType()} on {self.coordinates})"
+        return f"fieldChange({self.getType()} on {self.coordinate})"
 
     getType = lambda self: "flagged bomb" if self.isBomb else "safe spot"
-    opposite = lambda self: FieldChange(not (self.isBomb), self.coordinates)
+    opposite = lambda self: FieldChange(not (self.isBomb), self.coordinate)
 
 
 class ParentFieldChange:
     def __init__(self, fieldChanges) -> None:
         self.fieldChanges = fieldChanges
-        self.forbiddenChildren: set[fieldChanges] = set()
+        self.forbiddenChildren: set[list[FieldChange]] = set()
         self.finished = False
 
 
@@ -158,7 +148,7 @@ class Engine:
         neighbours = {}
 
         for change in changes:
-            for neighbour in field.getNeighbours(change.coordinates):
+            for neighbour in field.getNeighbours(change.coordinate):
 
                 if field.getCoordinate(neighbour) >= 0:
                     if neighbour in neighbours:
@@ -174,7 +164,7 @@ class Engine:
         if len(changes) == 0:
             return
         for change in changes:
-            for localNeighbour in field.getNeighbours(change.coordinates):
+            for localNeighbour in field.getNeighbours(change.coordinate):
                 for farNeighbour in field.getNeighbours(localNeighbour):
                     if field.getCoordinate(farNeighbour) == -1:
                         neighbours.add(farNeighbour)
@@ -195,7 +185,6 @@ class Engine:
         oppositeChange = change.opposite()
         if changeList == []:
             return oppositeChange
-
         parent = self.parentFieldChanges[self.deepStr(changeList)]
         if not parent.finished:
             if oppositeChange in parent.forbiddenChildren:
