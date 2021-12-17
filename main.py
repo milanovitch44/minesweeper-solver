@@ -7,8 +7,8 @@ class MineField:
     def __init__(self, width, height, bombs) -> None:
         self.board = [[-1] * height for _ in range(width)]
         self.isBomb = [[False] * height for _ in range(width)]
-        self.width,self.height = width, height
-        self.tilesToOpen =[]
+        self.width, self.height = width, height
+        self.tilesToOpen = []
 
         while bombs != 0:
             x, y = randrange(0, width), m.floor(((random() * height) ** 2) / height)
