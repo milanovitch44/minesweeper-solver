@@ -67,7 +67,7 @@ class MineField:
         self.board[beginX][beginY] = (
             -2 if guessedBomb else self.countBombs(beginCoordinate)
         )
-        
+
         return True
 
     countBombs = lambda self, coordinate: sum(
@@ -95,6 +95,7 @@ class ParentFieldChange:
         self.fieldChanges = fieldChanges
         self.forbiddenChildren: set[list[FieldChange]] = set()
         self.finished = False
+
 
 
 class Engine:
@@ -177,21 +178,23 @@ class Engine:
         # changes = [fieldChange(False,coordinates) for coordinates in ]
         return neighbours
 
-    def deepStr(self, changeList):
-        return "".join([str(el) for el in changeList])
+    def changeListIdentifier(self, changeList):
+        return ", ".join([str(el) for el in changeList])
 
     # returns right answer or None if unknown
     def helpParent(self, changeList: list[FieldChange], change) -> FieldChange:
         oppositeChange = change.opposite()
         if changeList == []:
             return oppositeChange
-        parent = self.parentFieldChanges[self.deepStr(changeList)]
+        parent = self.parentFieldChanges[self.changeListIdentifier(changeList)]
         if not parent.finished:
             if oppositeChange in parent.forbiddenChildren:
                 parent.finished = True
                 for index in range(len(changeList)):
                     parentOfParent = self.parentFieldChanges[
-                        self.deepStr(changeList[:index] + changeList[index + 1 :])
+                        self.changeListIdentifier(
+                            changeList[:index] + changeList[index + 1 :]
+                        )
                     ]
 
                     res = self.helpParent(self, parentOfParent, changeList[index])
@@ -225,8 +228,11 @@ class Engine:
                         if result is not None:
                             return result
             # print(f"Setting {self.deepStr(changeList)} to ")
-            self.parentFieldChanges[self.deepStr(changeList)] = ParentFieldChange(
-                changeList
+            self.parentFieldChanges[
+                self.changeListIdentifier(changeList)
+            ] = ParentFieldChange(changeList)
+            print(
+                f"Set {self.changeListIdentifier(changeList)} to ({changeList})"
             )
 
         return None

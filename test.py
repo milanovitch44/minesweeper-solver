@@ -18,7 +18,7 @@ class testEngine(unittest.TestCase):
             fc = e.getNextTile(mf)
             print(str(fc))
             assert mf.openTile(fc.coordinate, fc.isBomb)
-            time.sleep(0.1)
+            # time.sleep(0.1)
 
     def test_flood_fill(self):
         mf = main.MineField(50, 10, bombs=30)
