@@ -139,7 +139,7 @@ class PossSet:
 
 class Engine:
     def __init__(self, field: MineField) -> None:
-        self.poss_sets: list[PossSet] = []
+        self.poss_sets = set()
         self.calculateEdgeTiles(field)
         self.calculateSimpleSets(field)
         # print("\n".join(str(el) for el in self.poss_sets))
@@ -172,7 +172,7 @@ class Engine:
                             bombs_left -= 1
                     if len(unknowns):
                         # self.poss_sets.append(PossSet(unknowns, set(), bombs_left))
-                        self.poss_sets.append(PossSet(set(), unknowns, -bombs_left))
+                        self.poss_sets.add(PossSet(set(), unknowns, -bombs_left))
                         # print(f"{(x,y)} gives {PossSet(unknowns, set(), bombs_left)}")
 
     def getNextTile(self):
@@ -213,7 +213,7 @@ class Engine:
 
                     if new_ is not None:
                         new_.simplify()
-                        self.poss_sets.append(new_)
+                        self.poss_sets.add(new_)
         input("10 loops but nothing found, continue: ")
 
     def isValid(self, field: MineField, changes: list[FieldChange]):
