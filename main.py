@@ -175,17 +175,13 @@ class Engine:
                         self.poss_sets.append(PossSet(set(), unknowns, -bombs_left))
                         # print(f"{(x,y)} gives {PossSet(unknowns, set(), bombs_left)}")
 
-    def simpleNextTile(self):
-        for el in self.poss_sets:
-            res = el.is_solved()
-            if res is not None:
-                return res
-
     def getNextTile(self):
-        for _ in range(10):
-            res = self.simpleNextTile()
-            if res is not None:
-                return res
+        for pass_ in range(10):
+            for el in self.poss_sets:
+                res = el.is_solved()
+                if res is not None:
+                    return res
+            print(f"Pass: {pass_}")
             for x, y in itertools.product(self.poss_sets.copy(), repeat=2):
                 if (
                     any(
