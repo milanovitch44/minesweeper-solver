@@ -107,9 +107,11 @@ class PossSet:
             print("!")
 
     def simplify(self):
-        for i in self.values:
-            if i in self.counter_values:
+        v,cv = self.values.copy(),self.counter_values.copy()
+        for i in v:
+            if i in cv:
                 self.counter_values.remove(i)
+                self.values.remove(i)
         # if len(self.values)==0:
         #     self.values = self.counter_values
         #     self.bomb_diff*=-1
@@ -176,16 +178,14 @@ class Engine:
         for el in self.poss_sets:
             res = el.is_solved()
             if res is not None and len(res.values):
-                print(res)
                 
                 return FieldChange(res.bomb_diff != 0, list(res.values)[0])
 
     def getNextTile(self):
-        while True:
+        for _ in range(10):
             res = self.simpleNextTile()
             if res is not None:
                 return res
-            print("qkdjf")
             for x, y in itertools.product(self.poss_sets.copy(), repeat=2):
                 if (
                     any(
@@ -217,14 +217,9 @@ class Engine:
                         )
 
                     if new_ is not None:
-                        print(f"{x} + {y} -> {new_}")
                         new_.simplify()
-                        print(f"{x} + {y} -> {new_}")
-                        print(f"{PossSet(x.values | y.values,x.counter_values | y.counter_values,x.bomb_diff + y.bomb_diff)}"
-                              f"{PossSet(x.values | y.counter_values,x.counter_values | y.values,x.bomb_diff - y.bomb_diff)}")
-                        print()
                         self.poss_sets.append(new_)
-            print("qkjf")
+        input("10 loops but nothing found, continue: ")
 
     def isValid(self, field: MineField, changes: list[FieldChange]):
         neighbours = self.getNeighboursOfFieldChange(field, changes)
