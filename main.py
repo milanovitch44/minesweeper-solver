@@ -107,7 +107,7 @@ class PossSet:
             print("!")
 
     def simplify(self):
-        v,cv = self.values.copy(),self.counter_values.copy()
+        v, cv = self.values.copy(), self.counter_values.copy()
         for i in v:
             if i in cv:
                 self.counter_values.remove(i)
@@ -117,19 +117,20 @@ class PossSet:
         #     self.bomb_diff*=-1
 
     def is_solved(self):
-        # self.simplify()
-        if len(self.values) == 0:
-            if len(self.counter_values) == -self.bomb_diff != 0:
-                return PossSet(self.counter_values, set(), -self.bomb_diff)
-            if len(self.counter_values) != 0 == self.bomb_diff:
-                return PossSet(self.counter_values, set(), -self.bomb_diff)
-        else:
-            if len(self.values) == self.bomb_diff:
-                return PossSet(self.values, set(), self.bomb_diff)
-            if len(self.counter_values) == 0 == self.bomb_diff:
-                return PossSet(self.values, set(), 0)
-            if len(self.counter_values) == -self.bomb_diff:
-                return PossSet(self.counter_values, set(), -self.bomb_diff)
+        found_counter_bomb = None
+        if (
+            len(self.counter_values) == -self.bomb_diff
+        ):  # all counter bombs is only option
+            found_counter_bomb = True
+        elif len(self.values) == self.bomb_diff:  # all bombs only option
+            found_counter_bomb = False
+        if found_counter_bomb is not None:
+            if len(self.counter_values) != 0:
+                return FieldChange(found_counter_bomb, list(self.counter_values)[0])
+            if len(self.values) != 0:
+                return FieldChange(not (found_counter_bomb), list(self.values)[0])
+                # return PossSet(self.values,set(),)
+
         return
 
     def __str__(self) -> str:
@@ -141,7 +142,7 @@ class Engine:
         self.poss_sets: list[PossSet] = []
         self.calculateEdgeTiles(field)
         self.calculateSimpleSets(field)
-        print("\n".join(str(el) for el in self.poss_sets))
+        # print("\n".join(str(el) for el in self.poss_sets))
         self.changesToEvaluate: queue.Queue[list[FieldChange]] = queue.Queue()
         self.changesToEvaluate.put([])
         # self.addedToChangesToEvaluate:set[list[FieldChange]] = set()
@@ -172,14 +173,13 @@ class Engine:
                     if len(unknowns):
                         # self.poss_sets.append(PossSet(unknowns, set(), bombs_left))
                         self.poss_sets.append(PossSet(set(), unknowns, -bombs_left))
-                        print(f"{(x,y)} gives {PossSet(unknowns, set(), bombs_left)}")
+                        # print(f"{(x,y)} gives {PossSet(unknowns, set(), bombs_left)}")
 
     def simpleNextTile(self):
         for el in self.poss_sets:
             res = el.is_solved()
-            if res is not None and len(res.values):
-                
-                return FieldChange(res.bomb_diff != 0, list(res.values)[0])
+            if res is not None:
+                return res
 
     def getNextTile(self):
         for _ in range(10):
@@ -204,7 +204,6 @@ class Engine:
                             x.counter_values | y.counter_values,
                             x.bomb_diff + y.bomb_diff,
                         )
-
 
                     elif all((el not in y.values for el in x.counter_values)) and all(
                         (el not in y.values for el in x.counter_values)

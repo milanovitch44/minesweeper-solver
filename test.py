@@ -6,7 +6,7 @@ import time
 # print(main.MineField(2,3,4).board)
 
 
-class testEngine():
+class testEngine:
     def test_engine(self):
         mf = main.MineField(50, 10, bombs=200)
         print(mf.openTile((2, 2), False))
