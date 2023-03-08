@@ -52,7 +52,7 @@ class MineField:
         if number == 0
         else "~"
         if number == -1
-        else "!"
+        else "F"
         if number == -2
         else str(number)
     )
@@ -100,14 +100,27 @@ class ParentFieldChange:
 
 class PossSet:
     def __init__(self, values, counter_values, bomb_diff) -> None:
-        self.values = values
-        self.counter_values = counter_values
+        self.values: set = values
+        self.counter_values: set = counter_values
         self.bomb_diff = bomb_diff
+        if self.values == set() == self.counter_values:
+            print("!")
+
+    def simplify(self):
+        for i in self.values:
+            if i in self.counter_values:
+                self.counter_values.remove(i)
+        # if len(self.values)==0:
+        #     self.values = self.counter_values
+        #     self.bomb_diff*=-1
 
     def is_solved(self):
+        # self.simplify()
         if len(self.values) == 0:
             if len(self.counter_values) == -self.bomb_diff != 0:
-                return PossSet(self.values, set(), self.bomb_diff)
+                return PossSet(self.counter_values, set(), -self.bomb_diff)
+            if len(self.counter_values) != 0 == self.bomb_diff:
+                return PossSet(self.counter_values, set(), -self.bomb_diff)
         else:
             if len(self.values) == self.bomb_diff:
                 return PossSet(self.values, set(), self.bomb_diff)
@@ -147,21 +160,71 @@ class Engine:
         for x, row in enumerate(field.board):
             for y, el in enumerate(row):
                 bombs_left = field.getCoordinate((x, y))
-                if bombs_left != -1:
+                if -2 != bombs_left != -1:
                     unknowns = set()
                     for neighbour in field.getNeighbours((x, y)):
                         if field.getCoordinate(neighbour) == -1:
                             unknowns.add(neighbour)
                         elif field.getCoordinate(neighbour) == -2:
                             bombs_left -= 1
-                    self.poss_sets.append(PossSet(unknowns, set(), bombs_left))
+                    if len(unknowns):
+                        # self.poss_sets.append(PossSet(unknowns, set(), bombs_left))
+                        self.poss_sets.append(PossSet(set(), unknowns, -bombs_left))
+                        print(f"{(x,y)} gives {PossSet(unknowns, set(), bombs_left)}")
 
-    def getNextTile(self):
+    def simpleNextTile(self):
         for el in self.poss_sets:
             res = el.is_solved()
             if res is not None and len(res.values):
                 print(res)
+                
                 return FieldChange(res.bomb_diff != 0, list(res.values)[0])
+
+    def getNextTile(self):
+        while True:
+            res = self.simpleNextTile()
+            if res is not None:
+                return res
+            print("qkdjf")
+            for x, y in itertools.product(self.poss_sets.copy(), repeat=2):
+                if (
+                    any(
+                        (el in y.values or el in y.counter_values)
+                        for el in itertools.chain(x.values, x.counter_values)
+                    )
+                    and x != y
+                ):
+                    new_ = None
+
+                    if all((el not in y.values for el in x.values)) and all(
+                        (el not in y.counter_values for el in x.counter_values)
+                    ):
+                        new_ = PossSet(
+                            x.values | y.values,
+                            x.counter_values | y.counter_values,
+                            x.bomb_diff + y.bomb_diff,
+                        )
+
+
+                    elif all((el not in y.values for el in x.counter_values)) and all(
+                        (el not in y.values for el in x.counter_values)
+                    ):
+
+                        new_ = PossSet(
+                            x.values | y.counter_values,
+                            x.counter_values | y.values,
+                            x.bomb_diff - y.bomb_diff,
+                        )
+
+                    if new_ is not None:
+                        print(f"{x} + {y} -> {new_}")
+                        new_.simplify()
+                        print(f"{x} + {y} -> {new_}")
+                        print(f"{PossSet(x.values | y.values,x.counter_values | y.counter_values,x.bomb_diff + y.bomb_diff)}"
+                              f"{PossSet(x.values | y.counter_values,x.counter_values | y.values,x.bomb_diff - y.bomb_diff)}")
+                        print()
+                        self.poss_sets.append(new_)
+            print("qkjf")
 
     def isValid(self, field: MineField, changes: list[FieldChange]):
         neighbours = self.getNeighboursOfFieldChange(field, changes)

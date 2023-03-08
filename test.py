@@ -20,7 +20,7 @@ class testEngine():
             assert fc is not None, "not found"
             assert mf.openTile(fc.coordinate, fc.isBomb)
             # time.sleep(0.1)
-            input()
+            # input()
 
     def test_flood_fill(self):
         mf = main.MineField(50, 10, bombs=30)
