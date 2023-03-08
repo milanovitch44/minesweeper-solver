@@ -195,7 +195,7 @@ class Engine:
                 if res is not None:
                     return res
             if pass_ % 2:
-                self.calculateSimpleSets(10 * 30 ** (pass_ // 2))
+                self.calculateSimpleSets(10 * 10 ** (pass_ // 2))
                 # print(pass_)
                 # print(self.field.getBoard())
 
