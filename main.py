@@ -1,6 +1,9 @@
 import math as m
 import queue
-from random import random, randrange
+import random
+
+random.seed(1)
+from random import random as rand, randrange
 import itertools
 
 ntable = (
@@ -23,8 +26,8 @@ class MineField:
         self.tilesToOpen = []
 
         while bombs != 0:
-            x, y = randrange(0, width), m.floor(((random() * height) ** 2) / height)
-            if not self.isBomb[x][y] and (x > 10 or y > 10):
+            x, y = randrange(0, width), m.floor(((rand() * height) ** 2) / height)
+            if not self.isBomb[x][y] and (x > 3 or y > 10):
                 bombs -= 1
                 self.isBomb[x][y] = True
 
@@ -44,7 +47,6 @@ class MineField:
                 and yOffset + tileY < self.height
             )
         )
-
 
     def getBoard(self) -> str:
         return " " + "\n ".join(
@@ -194,8 +196,8 @@ class Engine:
                 res = el.is_solved()
                 if res is not None:
                     return res
-            if pass_ % 2:
-                self.calculateSimpleSets(10 * 10 ** (pass_ // 2))
+            if pass_ % 3:
+                self.calculateSimpleSets(30 * 300 ** (pass_ // 3))
                 # print(pass_)
                 # print(self.field.getBoard())
 
@@ -247,7 +249,7 @@ class Engine:
         print(len(self.poss_sets))
         print(self.field.getBoard())
         print()
-        input(f"30 loops but nothing found, continue: ")
+        # input(f"30 loops but nothing found, continue: ")
 
     def isValid(self, changes: list[FieldChange]):
         neighbours = self.getNeighboursOfFieldChange(changes)

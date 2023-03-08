@@ -8,7 +8,7 @@ import time
 
 class testEngine:
     def test_engine(self):
-        mf = main.MineField(100, 25, bombs=int((100 * 25 ) / 4))
+        mf = main.MineField(50, 20, bombs=int((50 * 20 ) / 6))
         print(mf.openTile((2, 2), False))
         print(".")
 
