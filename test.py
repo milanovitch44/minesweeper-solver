@@ -8,17 +8,21 @@ import time
 
 class testEngine:
     def test_engine(self):
-        mf = main.MineField(100, 36, bombs=100*36//6)
+        mf = main.MineField(100, 25, bombs=int((100 * 25 ) / 4))
         print(mf.openTile((2, 2), False))
         print(".")
 
-        while True:
+        for i in range(1000000000):
             e = main.Engine(mf)  # hard reset
-            print(mf.getBoard())
+            if i % 100 == 0:
+                print()
+                print(mf.getBoard())
+            
             fc = e.getNextTile()
-            print(str(fc))
+
+            # print(str(fc))
             assert fc is not None, "not found"
-            assert mf.openTile(fc.coordinate, fc.isBomb)
+            assert mf.openTile(fc.coordinate, fc.isBomb), f"Tried {fc}"
             # time.sleep(0.1)
             # input()
 

@@ -3,6 +3,17 @@ import queue
 from random import random, randrange
 import itertools
 
+ntable = (
+    (-1, -1),
+    (1, -1),
+    (-1, 1),
+    (1, 1),
+    (1, 0),
+    (0, 1),
+    (-1, 0),
+    (0, -1),
+)
+
 
 class MineField:
     def __init__(self, width: int, height: int, bombs: int) -> None:
@@ -13,7 +24,7 @@ class MineField:
 
         while bombs != 0:
             x, y = randrange(0, width), m.floor(((random() * height) ** 2) / height)
-            if not self.isBomb[x][y] and (x > 3 or y > 3):
+            if not self.isBomb[x][y] and (x > 10 or y > 10):
                 bombs -= 1
                 self.isBomb[x][y] = True
 
@@ -21,23 +32,19 @@ class MineField:
         return self.board[coordinate[0]][coordinate[1]]
 
     def getNeighbours(self, coordinate):
+        global ntable
         tileX, tileY = coordinate
-        out = []
-        for xOffset, yOffset in (
-            (-1, -1),
-            (1, -1),
-            (-1, 1),
-            (1, 1),
-            (1, 0),
-            (0, 1),
-            (-1, 0),
-            (0, -1),
-        ):
-            x = xOffset + tileX
-            y = yOffset + tileY
-            if x >= 0 and y >= 0 and x < self.width and y < self.height:
-                out.append((x, y))
-        return out
+        return (
+            (xOffset + tileX, yOffset + tileY)
+            for xOffset, yOffset in ntable
+            if (
+                xOffset + tileX >= 0
+                and yOffset + tileY >= 0
+                and xOffset + tileX < self.width
+                and yOffset + tileY < self.height
+            )
+        )
+
 
     def getBoard(self) -> str:
         return " " + "\n ".join(
@@ -55,6 +62,7 @@ class MineField:
         else "F"
         if number == -2
         else str(number)
+        # else ","
     )
 
     def openTile(self, beginCoordinate: tuple, guessedBomb: bool) -> bool:
@@ -139,52 +147,74 @@ class PossSet:
 
 class Engine:
     def __init__(self, field: MineField) -> None:
+        self.field = field
         self.poss_sets = set()
-        self.calculateEdgeTiles(field)
-        self.calculateSimpleSets(field)
+        self.calculateEdgeTiles()
+        self.calculateSimpleSets(5)
         # print("\n".join(str(el) for el in self.poss_sets))
         self.changesToEvaluate: queue.Queue[list[FieldChange]] = queue.Queue()
         self.changesToEvaluate.put([])
         # self.addedToChangesToEvaluate:set[list[FieldChange]] = set()
         self.parentFieldChanges = {}
 
-    def calculateEdgeTiles(self, field: MineField):
+    def calculateEdgeTiles(self):
         self.unknownEdgeTiles = set()
         # self.knownEdgeTiles = {}
-        for x, row in enumerate(field.board):
+        for x, row in enumerate(self.field.board):
             for y, el in enumerate(row):
-                if field.board[x][y] != -1:
-                    for neighbour in field.getNeighbours((x, y)):
-                        if field.getCoordinate(neighbour) == -1:
+                if self.field.board[x][y] != -1:
+                    for neighbour in self.field.getNeighbours((x, y)):
+                        if self.field.getCoordinate(neighbour) == -1:
                             self.unknownEdgeTiles.add(neighbour)
                     # self.knownEdgeTiles[(x,y)] = FieldChange(False,(x,y))
 
-    def calculateSimpleSets(self, field: MineField):
-        for x, row in enumerate(field.board):
+    def calculateSimpleSets(self, level=-1):
+        self.poss_sets = set()
+        for x, row in enumerate(self.field.board):
             for y, el in enumerate(row):
-                bombs_left = field.getCoordinate((x, y))
+                bombs_left = self.field.getCoordinate((x, y))
                 if -2 != bombs_left != -1:
                     unknowns = set()
-                    for neighbour in field.getNeighbours((x, y)):
-                        if field.getCoordinate(neighbour) == -1:
+                    for neighbour in self.field.getNeighbours((x, y)):
+                        if self.field.getCoordinate(neighbour) == -1:
                             unknowns.add(neighbour)
-                        elif field.getCoordinate(neighbour) == -2:
+                        elif self.field.getCoordinate(neighbour) == -2:
                             bombs_left -= 1
                     if len(unknowns):
                         # self.poss_sets.append(PossSet(unknowns, set(), bombs_left))
                         self.poss_sets.add(PossSet(set(), unknowns, -bombs_left))
+                        level -= 1
+                        if level == 0:
+                            return
                         # print(f"{(x,y)} gives {PossSet(unknowns, set(), bombs_left)}")
 
     def getNextTile(self):
-        for pass_ in range(10):
+        for pass_ in range(30):
             for el in self.poss_sets:
                 res = el.is_solved()
                 if res is not None:
                     return res
-            print(f"Pass: {pass_}")
+            if pass_ % 2:
+                self.calculateSimpleSets(10 * 30 ** (pass_ // 2))
+                # print(pass_)
+                # print(self.field.getBoard())
+
+            if pass_ > 0:
+                # print(f"Pass: {pass_}, set has grown to {len(self.poss_sets)}")
+                pass
             for x, y in itertools.product(self.poss_sets.copy(), repeat=2):
+                # assert type(x)
                 if (
-                    any(
+                    (
+                        len(x.values) == 0
+                        or len(y.values) == 0
+                        or (
+                            abs(next(iter(x.values))[0] - next(iter(y.values))[0]) < 8
+                            and abs(next(iter(x.values))[1] - next(iter(y.values))[1])
+                            < 8
+                        )
+                    )
+                    and any(
                         (el in y.values or el in y.counter_values)
                         for el in itertools.chain(x.values, x.counter_values)
                     )
@@ -214,17 +244,20 @@ class Engine:
                     if new_ is not None:
                         new_.simplify()
                         self.poss_sets.add(new_)
-        input("10 loops but nothing found, continue: ")
+        print(len(self.poss_sets))
+        print(self.field.getBoard())
+        print()
+        input(f"30 loops but nothing found, continue: ")
 
-    def isValid(self, field: MineField, changes: list[FieldChange]):
-        neighbours = self.getNeighboursOfFieldChange(field, changes)
+    def isValid(self, changes: list[FieldChange]):
+        neighbours = self.getNeighboursOfFieldChange(changes)
         for coordinate, changes in neighbours.items():
             # print(f"{coordinate=} {changes=}")
             upperLimit = 0
             lowerLimit = 0
-            for neighbour in field.getNeighbours(coordinate):
+            for neighbour in self.field.getNeighbours(coordinate):
 
-                tileValue = field.getCoordinate(neighbour)
+                tileValue = self.field.getCoordinate(neighbour)
                 if tileValue == -1:
                     upperLimit += 1
                 elif tileValue == -2:
@@ -235,38 +268,34 @@ class Engine:
                     lowerLimit += 1
                 else:
                     upperLimit -= 1
-            surroundingBombs = field.getCoordinate(coordinate)
+            surroundingBombs = self.field.getCoordinate(coordinate)
             # print(f"{lowerLimit}<={surroundingBombs}<={upperLimit}")
             if not (lowerLimit <= surroundingBombs <= upperLimit):
                 return False
 
         return True
 
-    def getNeighboursOfFieldChange(
-        self, field: MineField, changes: list[FieldChange]
-    ) -> dict:
+    def getNeighboursOfFieldChange(self, changes: list[FieldChange]) -> dict:
         neighbours = {}
 
         for change in changes:
-            for neighbour in field.getNeighbours(change.coordinate):
+            for neighbour in self.field.getNeighbours(change.coordinate):
 
-                if field.getCoordinate(neighbour) >= 0:
+                if self.field.getCoordinate(neighbour) >= 0:
                     if neighbour in neighbours:
                         neighbours[neighbour].append(change)
                     else:
                         neighbours[neighbour] = [change]
         return neighbours
 
-    def getPossibleChanges(
-        self, field: MineField, changes: list[FieldChange]
-    ) -> set[list] | None:
+    def getPossibleChanges(self, changes: list[FieldChange]) -> set[list] | None:
         neighbours = set()
         if len(changes) == 0:
             return
         for change in changes:
-            for localNeighbour in field.getNeighbours(change.coordinate):
-                for farNeighbour in field.getNeighbours(localNeighbour):
-                    if field.getCoordinate(farNeighbour) == -1:
+            for localNeighbour in self.field.getNeighbours(change.coordinate):
+                for farNeighbour in self.field.getNeighbours(localNeighbour):
+                    if self.field.getCoordinate(farNeighbour) == -1:
                         neighbours.add(farNeighbour)
 
                         # if field.board[neighbour[0]][neighbour[1]]!=-1:
