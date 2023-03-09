@@ -15,7 +15,7 @@ class testEngine:
             fc = e.getNextTile()
 
             # print(str(fc))
-            assert fc is not None, "not found"
+            assert fc is not None, "impossible to further solve the board"
             assert mf.openTile(fc.coordinate, fc.isBomb), f"Tried {fc}"
             # time.sleep(0.1)
             # input()

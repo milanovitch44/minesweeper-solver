@@ -152,7 +152,7 @@ class Engine:
 
     def getNextTile(self):
         for pass_ in range(30):
-            if pass_ % 3:
+            if pass_ % 3==0:
                 self.calculateSimpleSets(30 * 300 ** (pass_ // 3))
             for el in self.poss_sets:
                 res = el.is_solved()
