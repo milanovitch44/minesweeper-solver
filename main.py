@@ -1,7 +1,5 @@
-import math as m
-import queue
+import math
 import random
-from random import random as rand, randrange
 import itertools
 
 rel_table = (
@@ -24,7 +22,9 @@ class MineField:
         self.width, self.height = width, height
         self.tilesToOpen = []
         while bombs != 0:
-            x, y = randrange(0, width), m.floor(((rand() * height) ** 2) / height)
+            x, y = random.randrange(0, width), math.floor(
+                ((random.random() * height) ** 2) / height
+            )
             if not self.isBomb[x][y] and (x > 3 or y > 10):
                 bombs -= 1
                 self.isBomb[x][y] = True
@@ -103,14 +103,10 @@ class PossSet:
         self.bomb_diff = bomb_diff
 
     def simplify(self):
-        v, cv = self.values.copy(), self.counter_values.copy()
-        for i in v:
-            if i in cv:
+        for i in self.values.copy():
+            if i in self.counter_values:
                 self.counter_values.remove(i)
                 self.values.remove(i)
-        # if len(self.values)==0:
-        #     self.values = self.counter_values
-        #     self.bomb_diff*=-1
 
     def is_solved(self):
         found_counter_bomb = None
@@ -135,12 +131,6 @@ class PossSet:
 class Engine:
     def __init__(self, field: MineField) -> None:
         self.field = field
-        self.poss_sets = set()
-        # self.calculateEdgeTiles()
-        self.calculateSimpleSets(5)
-        # print("\n".join(str(el) for el in self.poss_sets))
-        self.changesToEvaluate: queue.Queue[list[FieldChange]] = queue.Queue()
-        self.changesToEvaluate.put([])
 
     def calculateSimpleSets(self, level=-1):
         self.poss_sets = set()
@@ -155,28 +145,22 @@ class Engine:
                         elif self.field.getCoordinate(neighbour) == -2:
                             bombs_left -= 1
                     if len(unknowns):
-                        # self.poss_sets.append(PossSet(unknowns, set(), bombs_left))
                         self.poss_sets.add(PossSet(set(), unknowns, -bombs_left))
                         level -= 1
                         if level == 0:
                             return
-                        # print(f"{(x,y)} gives {PossSet(unknowns, set(), bombs_left)}")
 
     def getNextTile(self):
         for pass_ in range(30):
+            if pass_ % 3:
+                self.calculateSimpleSets(30 * 300 ** (pass_ // 3))
             for el in self.poss_sets:
                 res = el.is_solved()
                 if res is not None:
                     return res
-            if pass_ % 3:
-                self.calculateSimpleSets(30 * 300 ** (pass_ // 3))
-                # print(pass_)
-                # print(self.field.getBoard())
             if pass_ > 0:
-                # print(f"Pass: {pass_}, set has grown to {len(self.poss_sets)}")
                 pass
             for x, y in itertools.product(self.poss_sets.copy(), repeat=2):
-                # assert type(x)
                 if (
                     (
                         len(x.values) == 0

@@ -1,10 +1,4 @@
 import main
-import unittest
-import queue
-import time
-
-# print(main.MineField(2,3,4).board)
-
 
 class testEngine:
     def test_engine(self):
