@@ -8,16 +8,16 @@ import time
 
 class testEngine:
     def test_engine(self):
-        mf = main.MineField(50, 20, bombs=int((50 * 20 ) / 6))
+        mf = main.MineField(50, 20, bombs=int((50 * 20) / 6))
         print(mf.openTile((2, 2), False))
         print(".")
 
         for i in range(1000000000):
             e = main.Engine(mf)  # hard reset
-            if i % 100 == 0:
+            if i % 15 == 0:
                 print()
-                print(mf.getBoard())
-            
+                print(mf)
+
             fc = e.getNextTile()
 
             # print(str(fc))
@@ -29,7 +29,7 @@ class testEngine:
     def test_flood_fill(self):
         mf = main.MineField(50, 10, bombs=30)
         # mf.openTile((0, 0))
-        print(mf.getBoard())
+        print(mf)
 
 
 testEngine().test_engine()
