@@ -33,7 +33,7 @@ class testEngine:
 
 
 testEngine().test_engine()
-print("Board solved as far as possible:")
+print("Board solved as far as possible")
 # print(mf.board)
 
 # print(list(main.Engine().calculateEdgeTiles(mf)))
