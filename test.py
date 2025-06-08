@@ -3,15 +3,19 @@ import main
 
 class testEngine:
     def test_engine(self):
+        import time
+
+        last_print_time = 0.0
         mf = main.MineField(50, 20, bombs=int((50 * 20) / 6))
         print(mf.openTile((2, 2), False))
         print(".")
 
         for i in range(1000000000):
             e = main.Engine(mf)  # hard reset
-            if i % 15 == 0:
+            if last_print_time + .01 < time.time():
                 print()
                 print(mf)
+                last_print_time = time.time()
 
             fc = e.getNextTile()
 
