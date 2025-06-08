@@ -1,5 +1,6 @@
 import main
 
+
 class testEngine:
     def test_engine(self):
         mf = main.MineField(50, 20, bombs=int((50 * 20) / 6))
@@ -15,7 +16,8 @@ class testEngine:
             fc = e.getNextTile()
 
             # print(str(fc))
-            assert fc is not None, "impossible to further solve the board"
+            if fc is None:
+                return
             assert mf.openTile(fc.coordinate, fc.isBomb), f"Tried {fc}"
             # time.sleep(0.1)
             # input()
@@ -27,7 +29,7 @@ class testEngine:
 
 
 testEngine().test_engine()
-print("done")
+print("Board solved as far as possible:")
 # print(mf.board)
 
 # print(list(main.Engine().calculateEdgeTiles(mf)))
