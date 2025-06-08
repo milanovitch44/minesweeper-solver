@@ -15,34 +15,29 @@ rel_table = (
 
 
 class MineField:
+
     def __init__(self, width: int, height: int, bombs: int) -> None:
-        # random.seed(1)
-        self.board = [[-1] * height for _ in range(width)]
-        self.isBomb = [[False] * height for _ in range(width)]
+        self.board: list[list[int]] = [[-1] * height for _ in range(width)]
+        self.isBomb: list[list[bool]] = [[False] * height for _ in range(width)]
         self.width, self.height = width, height
-        self.tilesToOpen = []
+        self.tilesToOpen: list[tuple[int, int]] = []
         while bombs != 0:
-            x, y = random.randrange(0, width), math.floor(
-                ((random.random() * height) ** 2) / height
-            )
+            x = random.randrange(0, width)
+            y = math.floor(((random.random() * height) ** 2) / height)
             if not self.isBomb[x][y] and (x > 3 or y > 10):
                 bombs -= 1
                 self.isBomb[x][y] = True
 
-    def getCoordinate(self, coordinate):
+    def getCoordinate(self, coordinate: tuple[int, int]) -> int:
         return self.board[coordinate[0]][coordinate[1]]
 
-    def getNeighbours(self, coordinate):
-        global rel_table
+    def getNeighbours(self, coordinate: tuple[int, int]):
         tileX, tileY = coordinate
         return (
             (xOffset + tileX, yOffset + tileY)
             for xOffset, yOffset in rel_table
             if (
-                xOffset + tileX >= 0
-                and yOffset + tileY >= 0
-                and xOffset + tileX < self.width
-                and yOffset + tileY < self.height
+                0 <= xOffset + tileX < self.width and 0 <= yOffset + tileY < self.height
             )
         )
 
@@ -54,21 +49,14 @@ class MineField:
             ]
         )
 
-    def getTileChar(self, number):
+    def getTileChar(self, number: int) -> str:
         return (
             "."
             if number == 0
-            else "~"
-            if number == -1
-            else "F"
-            if number == -2
-            else str(number)
+            else "~" if number == -1 else "F" if number == -2 else str(number)
         )
 
-    def openTile(self, beginCoordinate: tuple, guessedBomb: bool) -> bool:
-        """
-        returns if guess was correct
-        """
+    def openTile(self, beginCoordinate: tuple[int, int], guessedBomb: bool) -> bool:
         beginX, beginY = beginCoordinate
         if self.isBomb[beginX][beginY] != guessedBomb:
             return False
@@ -77,52 +65,51 @@ class MineField:
         )
         return True
 
-    def countBombs(self, coordinate):
+    def countBombs(self, coordinate: tuple[int, int]) -> int:
         return sum(self.isBomb[el[0]][el[1]] for el in self.getNeighbours(coordinate))
 
 
 class FieldChange:
-    def __init__(self, isBomb, coordinate):
+
+    def __init__(self, isBomb: bool, coordinate: tuple[int, int]):
         self.isBomb = isBomb
         self.coordinate = coordinate
 
-    def getType(self):
+    def getType(self) -> str:
         return "flagged bomb" if self.isBomb else "safe spot"
 
-    def opposite(self):
+    def opposite(self) -> "FieldChange":
         return FieldChange(not self.isBomb, self.coordinate)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"fieldChange({self.getType()} on {self.coordinate})"
 
 
 class PossSet:
-    def __init__(self, values, counter_values, bomb_diff) -> None:
-        self.values: set = values
-        self.counter_values: set = counter_values
+
+    def __init__(self, values: set, counter_values: set, bomb_diff: int) -> None:
+        self.values = values
+        self.counter_values = counter_values
         self.bomb_diff = bomb_diff
 
-    def simplify(self):
+    def simplify(self) -> None:
         for i in self.values.copy():
             if i in self.counter_values:
                 self.counter_values.remove(i)
                 self.values.remove(i)
 
-    def is_solved(self):
+    def is_solved(self) -> "FieldChange | None":
         found_counter_bomb = None
-        if (
-            len(self.counter_values) == -self.bomb_diff
-        ):  # all counter bombs is only option
+        if len(self.counter_values) == -self.bomb_diff:
             found_counter_bomb = True
-        elif len(self.values) == self.bomb_diff:  # all bombs only option
+        elif len(self.values) == self.bomb_diff:
             found_counter_bomb = False
         if found_counter_bomb is not None:
             if len(self.counter_values) != 0:
                 return FieldChange(found_counter_bomb, list(self.counter_values)[0])
             if len(self.values) != 0:
-                return FieldChange(not (found_counter_bomb), list(self.values)[0])
-                # return PossSet(self.values,set(),)
-        return
+                return FieldChange(not found_counter_bomb, list(self.values)[0])
+        return None
 
     def __str__(self) -> str:
         return f"{self.values}-{self.counter_values}={self.bomb_diff}"
@@ -152,7 +139,7 @@ class Engine:
 
     def getNextTile(self):
         for pass_ in range(30):
-            if pass_ % 3==0:
+            if pass_ % 3 == 0:
                 self.calculateSimpleSets(30 * 300 ** (pass_ // 3))
             for el in self.poss_sets:
                 res = el.is_solved()
